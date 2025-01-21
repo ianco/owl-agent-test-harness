@@ -6,6 +6,7 @@ import os
 import signal
 import subprocess
 import sys
+import tempfile
 import yaml
 from timeit import default_timer
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
@@ -14,14 +15,20 @@ from time import gmtime, strftime
 from acapy.routes.agent_routes import routes as agent_routes
 from acapy.routes.mediation_routes import get_mediation_record_by_connection_id
 from acapy.routes.mediation_routes import routes as mediation_routes
-from aiohttp import (ClientError, ClientRequest, ClientSession, ClientTimeout,
-                     web)
-from python.agent_backchannel import (RUN_MODE, START_TIMEOUT,
-                                      AgentBackchannel, AgentPorts,
-                                      BackchannelCommand, default_genesis_txns)
-from python.storage import (get_resource, pop_resource, pop_resource_latest,
-                            push_resource)
-from python.utils import flatten, log_msg, output_reader, prompt_loop
+from aiohttp import (
+    ClientError, ClientRequest, ClientSession, ClientTimeout, web
+)
+from python.agent_backchannel import (
+    RUN_MODE, START_TIMEOUT,
+    AgentBackchannel, AgentPorts,
+    BackchannelCommand, default_genesis_txns
+)
+from python.storage import (
+    get_resource, pop_resource, pop_resource_latest, push_resource
+)
+from python.utils import (
+    flatten, log_msg, output_reader, tmpfile_output_reader, prompt_loop
+)
 from typing_extensions import Literal
 
 # from helpers.jsonmapper.json_mapper import JsonMapper
@@ -137,7 +144,11 @@ class AcaPyAgentBackchannel(AgentBackchannel):
             "proof-v2": "/present-proof-2.0/",
         }
 
-        self.credFormatFilterTranslationDict = {"indy": "indy", "json-ld": "ld_proof"}
+        self.credFormatFilterTranslationDict = {
+            "indy": "indy",
+            "json-ld": "ld_proof",
+            "anoncreds": "anoncreds",
+        }
 
         self.proofTypeKeyTypeTranslationDict = {
             "Ed25519Signature2018": "ed25519",
@@ -256,6 +267,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
             result.append(("--genesis-transactions", self.genesis_data))
         if self.seed:
             result.append(("--seed", self.seed))
+        # deprecated - should be removed
         if self.storage_type:
             result.append(("--storage-type", self.storage_type))
         if self.postgres:
@@ -1811,21 +1823,42 @@ class AcaPyAgentBackchannel(AgentBackchannel):
     def _process(
         self, args: List[str], env: Dict[str, str], loop: asyncio.AbstractEventLoop
     ):
-        proc = subprocess.Popen(args, env=env, encoding="utf-8", preexec_fn=os.setsid)
+        tempfile1 = tempfile.NamedTemporaryFile(mode='w+', encoding="utf-8", buffering=-1)
+        tempfile2 = tempfile.NamedTemporaryFile(mode='w+', encoding="utf-8", buffering=-1)
+        proc = subprocess.Popen(
+            args,
+            env=env,
+            stdout=tempfile1,
+            stderr=tempfile2,
+            encoding="utf-8",
+            preexec_fn=os.setsid,
+        )
         stdout = loop.run_in_executor(
             None,
-            output_reader,
-            proc.stdout,
+            tmpfile_output_reader,
+            proc,
+            tempfile1,
             functools.partial(self.handle_output, source="stdout"),
         )
         stderr = loop.run_in_executor(
             None,
-            output_reader,
-            proc.stderr,
+            tmpfile_output_reader,
+            proc,
+            tempfile2,
             functools.partial(self.handle_output, source="stderr"),
         )
         self.output_handler_futures = [stdout, stderr]
         return proc
+
+    def handle_output(self, *output, source: str = None, **kwargs):
+        end = "" if source else "\n"
+        if source == "stderr":
+            color = "fg:ansired"
+        elif not source:
+            color = self.color or "fg:ansiblue"
+        else:
+            color = None
+        print(self.prefix_str, *output)
 
     def get_process_args(self, bin_path: Optional[str] = None) -> List[str]:
         # TODO aca-py needs to be in the path so no need to give it a cmd_path

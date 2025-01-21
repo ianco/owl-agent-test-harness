@@ -119,6 +119,23 @@ def output_reader(handle, callback, *args, **kwargs):
         run_in_terminal(functools.partial(callback, line, *args))
 
 
+def tmpfile_output_reader(proc, handle, callback, *args, **kwargs):
+    # proc.poll returns None until the subprocess ends,
+    # it will then return the exit code, hopefully 0 ;)
+    handle.seek(0)
+    while proc.poll() is None:
+        where = handle.tell()
+        lines = handle.read()
+        if not lines:
+            # Adjust the sleep interval to your needs
+            sleep(0.1)
+            handle.seek(where)
+        else:
+            callback(lines, *args)
+    lines = handle.read()
+    callback(lines, *args)
+
+
 def log_msg(*msg, color="fg:ansimagenta", **kwargs):
     run_in_terminal(lambda: print_ext(*msg, color=color, **kwargs))
 
