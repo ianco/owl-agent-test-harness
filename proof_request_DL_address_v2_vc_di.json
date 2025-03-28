@@ -1,0 +1,49 @@
+"presentation_request": {
+    "dif": {
+        "options": {
+            "challenge": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+            "domain": "4jt78h47fh47",
+        },
+        "presentation_definition": {
+            "id": "5591656f-5b5d-40f8-ab5c-9041c8e3a6a0",
+            "name": "Address Verification",
+            "purpose": "We need to verify your address",
+            "input_descriptors": [
+                {
+                    "id": "drivers_license_input_1",
+                    "name": "American Driver's License",
+                    "schema": [
+                        {
+                            "uri": "https://www.w3.org/2018/credentials#VerifiableCredential"
+                        }
+                    ],
+                    "constraints": {
+                        "statuses": {
+                            "active": {"directive": "disallowed"}
+                        },
+                        "limit_disclosure": "required",
+                        "fields": [
+                            {
+                                "path": ["$.issuer"],
+                                "filter": {
+                                    "type": "string",
+                                    "const": "replace_me"
+                                },
+                            },
+                            {"path": ["$.credentialSubject.address"]}
+                        ]
+                    }
+                }
+            ],
+            "format": {
+                "di_vc": {
+                    "proof_type": ["DataIntegrityProof"],
+                    "cryptosuite": [
+                        "anoncreds-2023",
+                        "eddsa-rdfc-2022"
+                    ]
+                }
+            }
+        }
+    }
+}
