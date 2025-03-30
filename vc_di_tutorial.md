@@ -203,6 +203,8 @@ We can add another "example" to use the VC_DI format:
       | vc_di           | Data_DL_MaxValues |
 ```
 
+Note the use of the `@Anoncreds` tag - this indicates that the agent wallet (Aca-Py specifically) must support AnonCreds.  This is a bit confusing, since we're now adding a new credential format (VC_DI) which is also going to get a new tag later on.  But for now just go with it ...
+
 #### Test Data
 
 The data files for the AnonCreds credential type (as indicated by the `@Schema_DriversLicense_v2` tag) are:
@@ -239,12 +241,38 @@ From the code overview above, we need to look at the following to support issuin
 
 In the Aca-Py backchannel:
 
-- update the credential issue process to treat `"vc_di"` like `"anoncreds"`
+- add the credential format to the mapping:
+
+```
+    self.credFormatFilterTranslationDict = {
+        "indy": "indy",
+        "json-ld": "ld_proof",
+        "anoncreds": "anoncreds",
+        "vc_di": "vc_di",
+    }
+```
+
+- update the credential issue process to treat `"vc_di"` like `"anoncreds"`, for the most part we just need to do this:
+
+```
+    if cred_format == "indy" or cred_format == "anoncreds" or cred_format == "vc_di":
+```
+
 - add a webhook handler for VC_DI format (`handle_issue_credential_v2_0_vc_di()`)
+
+```
+    async def handle_issue_credential_v2_0_vc_di(self, message: Mapping[str, Any]):
+        pass
+```
+
+(The backchannel has a lot of references to "anoncreds" in the context of checking if we need to be running on an `askar-anoncreds` wallet - we can just leave all this code alone, since `vc_di` behaves just like `anoncreds` in this context.)
 
 In `aries-test-harness/agent_test_utils.py` there are references to `AnonCreds`:
 
 - in `amend_filters_with_runtime_data()` need to add an `if "vc_di" in filters:` block to handle all the `replace_me` parameters
+
+```
+```
 
 And the following test harness code has references to `AnonCreds` and needs review:
 
@@ -253,6 +281,17 @@ And the following test harness code has references to `AnonCreds` and needs revi
 ./aries-test-harness/features/environment.py:454:        if context and "Anoncreds" in context.tags:
 ```
 
+In `0453-issue-credential-v2.py` we need to add a parameter for the new credential format, and update the format checks:
+
+```
+CRED_FORMAT_VC_DI = "vc_di"
+
+...
+
+    if cred_format == CRED_FORMAT_INDY or cred_format == CRED_FORMAT_ANONCREDS or cred_format == CRED_FORMAT_VC_DI:
+```
+
+In `environment.py` the "anoncreds" references are all related to the wallet type, which will have the same behaviour for our new credential format.
 
 ### Test Scenario to Present a VC_DI Presentation
 

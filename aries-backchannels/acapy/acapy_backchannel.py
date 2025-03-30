@@ -141,6 +141,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
             "indy": "indy",
             "json-ld": "ld_proof",
             "anoncreds": "anoncreds",
+            "vc_di": "vc_di",
         }
 
         self.proofTypeKeyTypeTranslationDict = {
@@ -483,6 +484,9 @@ class AcaPyAgentBackchannel(AgentBackchannel):
         if "revocation_id" in message:  # push as a revocation message
             push_resource(thread_id, "revocation-registry-msg", message)
             log_msg(f"Issue Anoncreds Credential Webhook message contains revocation info: {thread_id} {message}")
+
+    async def handle_issue_credential_v2_0_vc_di(self, message: Mapping[str, Any]):
+        pass
 
     async def handle_present_proof_v2_0(self, message: Mapping[str, Any]):
         log_msg("Received a Present Proof v2 Webhook message: " + json.dumps(message, indent=4))
@@ -2197,7 +2201,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
 
                 if cred_format is None:
                     raise Exception("Credential format not specified for presentation")
-                elif cred_format == "indy" or cred_format == "anoncreds":
+                elif cred_format == "indy" or cred_format == "anoncreds" or cred_format == "vc_di":
                     requested_attributes = pres_request_data.get(
                         "requested_attributes", {}
                     )
@@ -2220,7 +2224,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
                     if non_revoked is not None:
                         presentation_request[cred_format]["non_revoked"] = non_revoked
 
-                elif cred_format == "json-ld":
+                elif cred_format == "json-ld" or cred_format == "vc_di"
                     # We use DIF format for JSON-LD credentials
                     presentation_request = {"dif": pres_request_data}
                 else:
@@ -2242,7 +2246,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
 
                 if cred_format is None:
                     raise Exception("Credential format not specified for presentation")
-                elif cred_format == "indy" or cred_format == "anoncreds":
+                elif cred_format == "indy" or cred_format == "anoncreds" or cred_format == "vc_di":
                     requested_attributes = data.get("requested_attributes", {})
                     requested_predicates = data.get("requested_predicates", {})
                     self_attested_attributes = data.get("self_attested_attributes", {})
@@ -2254,7 +2258,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
                             "self_attested_attributes": self_attested_attributes,
                         }
                     }
-                elif cred_format == "json-ld":
+                elif cred_format == "json-ld" or cred_format == "vc_di":
                     presentation = data.copy()
                     presentation.pop("format")
 

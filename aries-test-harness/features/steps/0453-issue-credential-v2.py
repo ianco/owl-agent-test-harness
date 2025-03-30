@@ -11,11 +11,12 @@ from behave import given, then, when
 CRED_FORMAT_INDY = "indy"
 CRED_FORMAT_JSON_LD = "json-ld"
 CRED_FORMAT_ANONCREDS = "anoncreds"
+CRED_FORMAT_VC_DI = "vc_di"
 
 
 @given('"{issuer}" is ready to issue a "{cred_format}" credential')
 def step_impl(context, issuer: str, cred_format: str = CRED_FORMAT_INDY):
-    if cred_format == CRED_FORMAT_INDY or cred_format == CRED_FORMAT_ANONCREDS:
+    if cred_format == CRED_FORMAT_INDY or cred_format == CRED_FORMAT_ANONCREDS or cred_format == CRED_FORMAT_VC_DI:
         # Call legacy indy ready to issue credential step
         context.execute_steps(
             f"""
@@ -314,7 +315,7 @@ def step_impl(context, holder, cred_format):
     assert resp_status == 200, f"resp_status {resp_status} is not 200; {resp_text}"
     resp_json = json.loads(resp_text)
 
-    if cred_format == CRED_FORMAT_INDY or cred_format == CRED_FORMAT_ANONCREDS:
+    if cred_format == CRED_FORMAT_INDY or cred_format == CRED_FORMAT_ANONCREDS or cred_format == CRED_FORMAT_VC_DI:
         # assert resp_json["schema_id"] == context.issuer_schema_id_dict[context.schema["schema_name"]]
         # assert resp_json["cred_def_id"] == context.credential_definition_id_dict[context.schema["schema_name"]]
         assert (
