@@ -157,6 +157,28 @@ def amend_filters_with_runtime_data(context, filters, did_for_id=None):
         ):
             filters["anoncreds"]["schema_id"] = context.issuer_schema_dict[schema_name]["id"]
 
+    if "vc_di" in filters:
+        if (
+            "schema_issuer_did" in filters["vc_di"]
+            and filters["vc_di"]["schema_issuer_did"] == "replace_me"
+        ):
+            filters["vc_di"]["schema_issuer_did"] = context.issuer_did_dict[schema_name]
+        if (
+            "issuer_did" in filters["vc_di"]
+            and filters["vc_di"]["issuer_did"] == "replace_me"
+        ):
+            filters["vc_di"]["issuer_did"] = context.issuer_did_dict[schema_name]
+        if (
+            "cred_def_id" in filters["vc_di"]
+            and filters["vc_di"]["cred_def_id"] == "replace_me"
+        ):
+            filters["vc_di"]["cred_def_id"] = context.issuer_credential_definition_dict[schema_name]["id"]
+        if (
+            "schema_id" in filters["vc_di"]
+            and filters["vc_di"]["schema_id"] == "replace_me"
+        ):
+            filters["vc_di"]["schema_id"] = context.issuer_schema_dict[schema_name]["id"]
+
     if "json-ld" in filters:
         json_ld = filters.get("json-ld")
         credential = json_ld.get("credential")

@@ -197,7 +197,7 @@ This is the existing test with AnonCreds support - `@T001-RFC0453` (features/045
 We can add another "example" to use the VC_DI format:
 
 ```
-    @RFC0160 @Anoncreds
+    @RFC0160 @Anoncreds @CredFormat_VC_DI
     Examples:
       | credential_type | credential_data   |
       | vc_di           | Data_DL_MaxValues |
@@ -272,6 +272,27 @@ In `aries-test-harness/agent_test_utils.py` there are references to `AnonCreds`:
 - in `amend_filters_with_runtime_data()` need to add an `if "vc_di" in filters:` block to handle all the `replace_me` parameters
 
 ```
+    if "vc_di" in filters:
+        if (
+            "schema_issuer_did" in filters["vc_di"]
+            and filters["vc_di"]["schema_issuer_did"] == "replace_me"
+        ):
+            filters["vc_di"]["schema_issuer_did"] = context.issuer_did_dict[schema_name]
+        if (
+            "issuer_did" in filters["vc_di"]
+            and filters["vc_di"]["issuer_did"] == "replace_me"
+        ):
+            filters["vc_di"]["issuer_did"] = context.issuer_did_dict[schema_name]
+        if (
+            "cred_def_id" in filters["vc_di"]
+            and filters["vc_di"]["cred_def_id"] == "replace_me"
+        ):
+            filters["vc_di"]["cred_def_id"] = context.issuer_credential_definition_dict[schema_name]["id"]
+        if (
+            "schema_id" in filters["vc_di"]
+            and filters["vc_di"]["schema_id"] == "replace_me"
+        ):
+            filters["vc_di"]["schema_id"] = context.issuer_schema_dict[schema_name]["id"]
 ```
 
 And the following test harness code has references to `AnonCreds` and needs review:

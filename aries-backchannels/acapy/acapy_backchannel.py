@@ -2224,7 +2224,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
                     if non_revoked is not None:
                         presentation_request[cred_format]["non_revoked"] = non_revoked
 
-                elif cred_format == "json-ld" or cred_format == "vc_di"
+                elif cred_format == "json-ld" or cred_format == "vc_di":
                     # We use DIF format for JSON-LD credentials
                     presentation_request = {"dif": pres_request_data}
                 else:
