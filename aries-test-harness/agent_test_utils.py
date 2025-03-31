@@ -216,9 +216,9 @@ def amend_presentation_definition_with_runtime_data(context, presentation_defini
     # presentation definition is outer object with presentation definition and options
     pd = presentation_definition.get("presentation_definition", {})
     format = pd.get("format", {})
-    ldp_vp_proof_type = format.get("ldp_vp", {}).get("proof_type", [])
 
     # Only ldp_vp with a single proof type replaced is supported ATM
+    ldp_vp_proof_type = format.get("ldp_vp", {}).get("proof_type", [])
     if "replace_me" in ldp_vp_proof_type:
         index = ldp_vp_proof_type.index("replace_me")
         ldp_vp_proof_type[index] = context.proof_type
@@ -226,5 +226,20 @@ def amend_presentation_definition_with_runtime_data(context, presentation_defini
         presentation_definition["presentation_definition"]["format"]["ldp_vp"][
             "proof_type"
         ] = ldp_vp_proof_type
+
+    # note the format_type here is "di_vc"
+    vc_di_vp_proof_type = format.get("di_vc")
+    if vc_di_vp_proof_type:
+        # Only vc_di with a single proof type replaced is supported ATM
+        vc_di_vp_proof_type = format.get("vc_di", {}).get("proof_type", [])
+        # TODO for JSON-LD credentials the proof type can be specified in a tag, for example "ProofType_Ed25519Signature2018"
+        # (for now, for vc_di, we'll just take whatever is in the test data file)
+        # However for VC_DI we need to insert the issuer DID as a credential filter
+        schema_name = get_schema_name(context)
+        for descriptor in pd["input_descriptors"]:
+            constraint_fields = descriptor["constraints"]["fields"]
+            for field in constraint_fields:
+                if "$.issuer" in field["path"] and field["filter"]["const"] == "replace_me":
+                    field["filter"]["const"] = context.issuer_did_dict[schema_name]
 
     return presentation_definition

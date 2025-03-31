@@ -31,7 +31,7 @@ def prepare_proof_request(context: Any, request_for_proof: str) -> Dict[str, Any
             if context.non_revoked_timeframe:
                 data["non_revoked"] = context.non_revoked_timeframe["non_revoked"]
 
-        elif context.current_cred_format == "json-ld":
+        elif context.current_cred_format == "json-ld" or context.current_cred_format == "vc_di":
             data = amend_presentation_definition_with_runtime_data(context, data)
         else:
             raise Exception(f"Unknown cred format {context.current_cred_format}")
@@ -67,6 +67,8 @@ def step_impl(context, prover, issuer, credential_data):
         context.current_cred_format = "indy"
     elif "CredFormat_Anoncreds" in context.tags:
         context.current_cred_format = "anoncreds"
+    elif "CredFormat_VC_DI" in context.tags:
+        context.current_cred_format = "vc_di"
     elif "CredFormat_JSON-LD" in context.tags:
         context.current_cred_format = "json-ld"
 
@@ -311,7 +313,7 @@ def step_impl(context, prover, presentation):
             except KeyError:
                 pass
 
-        elif context.current_cred_format == "json-ld":
+        elif context.current_cred_format == "json-ld" or context.current_cred_format == "vc_di":
             # All good
             cred_type_name = presentation.get("cred_type_name")
             record_ids = presentation.get("record_ids", {})

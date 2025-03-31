@@ -77,6 +77,11 @@ Feature: RFC 0454 Aries agent present proof v2
          | Acme   | Data_DL_MaxValues | proof_request_DL_address_v2     | presentation_DL_address_v2     |
          | Faber  | Data_DL_MaxValues | proof_request_DL_age_over_19_v2 | presentation_DL_age_over_19_v2 |
 
+      @AIP20 @RFC0592 @Schema_DriversLicense_v2 @Anoncreds @CredFormat_VC_DI
+      Examples:
+         | issuer | credential_data   | request_for_proof                 | presentation                     |
+         | Acme   | Data_DL_MaxValues | proof_request_DL_address_v2_vc_di | presentation_DL_address_v2_vc_di |
+
 
    @T002-RFC0454 @RFC0510 @critical @AcceptanceTest @DIDExchangeConnection @CredFormat_JSON-LD @Schema_Citizenship_Context @CredProposalStart
    Scenario Outline: Present Proof of specific types and proof is acknowledged with a Citizenship credential type with a DID Exchange Connection

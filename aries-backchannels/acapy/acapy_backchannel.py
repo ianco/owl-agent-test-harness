@@ -426,9 +426,10 @@ class AcaPyAgentBackchannel(AgentBackchannel):
         elif message_protocol == "connections/1.0":
             connection_id = message["connection_id"]
             push_resource(connection_id, "connection-msg", message)
-        else:
+        elif message_protocol:
+            # not sure why but this scenario ("None" protocol) is messing up the logs
             raise Exception(
-                f"Unknown message type in Connections Webhook: {json.dumps(message)}"
+                f"Unknown message type in Connections Webhook: {message_protocol} {json.dumps(message)}"
             )
         log_msg("Received a Connection Webhook message: " + json.dumps(message, indent=4))
 
@@ -2201,7 +2202,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
 
                 if cred_format is None:
                     raise Exception("Credential format not specified for presentation")
-                elif cred_format == "indy" or cred_format == "anoncreds" or cred_format == "vc_di":
+                elif cred_format == "indy" or cred_format == "anoncreds":
                     requested_attributes = pres_request_data.get(
                         "requested_attributes", {}
                     )
@@ -2246,7 +2247,7 @@ class AcaPyAgentBackchannel(AgentBackchannel):
 
                 if cred_format is None:
                     raise Exception("Credential format not specified for presentation")
-                elif cred_format == "indy" or cred_format == "anoncreds" or cred_format == "vc_di":
+                elif cred_format == "indy" or cred_format == "anoncreds":
                     requested_attributes = data.get("requested_attributes", {})
                     requested_predicates = data.get("requested_predicates", {})
                     self_attested_attributes = data.get("self_attested_attributes", {})

@@ -343,7 +343,7 @@ For this test we just need to add suport for VC_DI presentations (it used the sa
 We can add (note there are 2 tags - `@CredFormat_VC_DI` and `@Anoncreds` - the latter indicates the wallet type, which must be `AnonCreds`):
 
 ```
-      @AIP20 @CredFormat_VC_DI @RFC0592 @Schema_DriversLicense_v2 @Anoncreds
+      @AIP20 @RFC0592 @Schema_DriversLicense_v2 @Anoncreds @CredFormat_VC_DI
       Examples:
          | issuer | credential_data   | request_for_proof               | presentation                   |
          | Acme   | Data_DL_MaxValues | proof_request_DL_address_v2     | presentation_DL_address_v2     |
@@ -358,57 +358,90 @@ The data files for the anoncreds cred type are:
 ./features/data/presentation_DL_address_v2.json
 ```
 
-The proof request (and presentation) will be a bit more complicated - they need to be in "dif" format, so we need to translate what's happening with the "anoncreds" version.  Luckliy we can look at the aca-py alice/faber demo for some clues.
+The proof request (and presentation) will be a bit more complicated - they need to be in "dif" format, so we need to translate what's happening with the "anoncreds" version.  The data for existing "dif" type presentation requests is in:
+
+```
+./features/data/proof_request_DL_address_v2_dif_pe.json
+./features/data/presentation_DL_address_v2_dif_pe.json
+```
+
+Also we are lucky we can look at the aca-py alice/faber demo for some clues.
 
 For the VC_DI presentation request, we will create `features/data/proof_request_DL_address_v2_vc_di.json`:
 
 ```
-"presentation_request": {
-    "dif": {
-        "options": {
+{
+    "presentation_request":
+    {
+        "options":
+        {
             "challenge": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
-            "domain": "4jt78h47fh47",
+            "domain": "4jt78h47fh47"
         },
-        "presentation_definition": {
+        "presentation_definition":
+        {
             "id": "5591656f-5b5d-40f8-ab5c-9041c8e3a6a0",
             "name": "Address Verification",
             "purpose": "We need to verify your address",
-            "input_descriptors": [
+            "format":
+            {
+                "di_vc":
                 {
-                    "id": "drivers_license_input_1",
-                    "name": "American Driver's License",
-                    "schema": [
-                        {
-                            "uri": "https://www.w3.org/2018/credentials#VerifiableCredential"
-                        }
+                    "proof_type":
+                    [
+                        "DataIntegrityProof"
                     ],
-                    "constraints": {
-                        "statuses": {
-                            "active": {"directive": "disallowed"}
-                        },
-                        "limit_disclosure": "required",
-                        "fields": [
-                            {
-                                "path": ["$.issuer"],
-                                "filter": {
-                                    "type": "string",
-                                    "const": "replace_me"
-                                },
-                            },
-                            {"path": ["$.credentialSubject.address"]}
-                        ]
-                    }
-                }
-            ],
-            "format": {
-                "di_vc": {
-                    "proof_type": ["DataIntegrityProof"],
-                    "cryptosuite": [
+                    "cryptosuite":
+                    [
                         "anoncreds-2023",
                         "eddsa-rdfc-2022"
                     ]
                 }
-            }
+            },
+            "input_descriptors":
+            [
+                {
+                    "id": "drivers_license_input_1",
+                    "name": "American Drivers License",
+                    "schema":
+                    [
+                        {
+                            "uri": "https://www.w3.org/2018/credentials#VerifiableCredential"
+                        }
+                    ],
+                    "constraints":
+                    {
+                        "statuses":
+                        {
+                            "active":
+                            {
+                                "directive": "disallowed"
+                            }
+                        },
+                        "limit_disclosure": "required",
+                        "fields":
+                        [
+                            {
+                                "path":
+                                [
+                                    "$.issuer"
+                                ],
+                                "filter":
+                                {
+                                    "type": "string",
+                                    "const": "replace_me"
+                                }
+                            },
+                            {
+                                "path":
+                                [
+                                    "$.credentialSubject.address"
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
         }
     }
 }
@@ -421,8 +454,8 @@ For the VC_DI presentation request, we will create `features/data/proof_request_
    "presentation": {
      "record_ids": {
        "drivers_license_input_1": ["Schema_DriversLicense_v2"]
+     }
    }
- }
 }
 ```
 
@@ -434,14 +467,31 @@ No changes required to the Aca-Py backchannel.
 
 In `aries-test-harness/agent_test_utils.py`:
 
-- in `amend_filters_with_runtime_data()` the `if "json-ld" in filters:` block needs to handle any vc_di-specific parameters
-
-And the following test harness code has references to `AnonCreds` and needs review:
+- in `amend_presentation_definition_with_runtime_data()` the `if "json-ld" in filters:` block needs to handle any vc_di-specific parameters:
 
 ```
-./aries-test-harness/features/steps/0454-present-proof-v2-v3.py:30:        if context.current_cred_format == "indy" or context.current_cred_format == "anoncreds":
-./aries-test-harness/features/steps/0454-present-proof-v2-v3.py:69:        context.current_cred_format = "anoncreds"
-./aries-test-harness/features/steps/0454-present-proof-v2-v3.py:269:        if context.current_cred_format == "indy" or context.current_cred_format == "anoncreds":
+    # note the format_type here is "di_vc"
+    vc_di_vp_proof_type = format.get("di_vc")
+    if vc_di_vp_proof_type:
+        # Only vc_di with a single proof type replaced is supported ATM
+        vc_di_vp_proof_type = format.get("vc_di", {}).get("proof_type", [])
+        # TODO for JSON-LD credentials the proof type can be specified in a tag, for example "ProofType_Ed25519Signature2018"
+        # (for now, for vc_di, we'll just take whatever is in the test data file)
+        # However for VC_DI we need to insert the issuer DID as a credential filter
+        schema_name = get_schema_name(context)
+        for descriptor in pd["input_descriptors"]:
+            constraint_fields = descriptor["constraints"]["fields"]
+            for field in constraint_fields:
+                if "$.issuer" in field["path"] and field["filter"]["const"] == "replace_me":
+                    field["filter"]["const"] = context.issuer_did_dict[schema_name]
+```
+
+And in the test harness code (`features/steps/0454-present-proof-v2-v3.py`) "vc_di" presentations need to be handled like "json-ld":
+
+```
+    ...
+    elif context.current_cred_format == "json-ld" or context.current_cred_format == "vc_di":
+    ...
 ```
 
 
